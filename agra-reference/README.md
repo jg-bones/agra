@@ -2,6 +2,8 @@
 
 AGRA 规范的 Python 参考实现，覆盖规范全部要素。
 
+> **功能清单和验证指南：** [FEATURES.md](FEATURES.md) — 列出全部 7 个功能的位置、关键代码和验证方式，供人类和 AI 阅读。
+
 ## Quick Start
 
 ```bash
