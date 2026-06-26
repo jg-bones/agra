@@ -1,0 +1,110 @@
+# AGRA Demo Configuration
+# 对应 AGRA-0004 (Governance Model) 的配置
+
+# Provider 配置
+providers:
+  openai:
+    endpoint: https://api.openai.com
+    api_key: "sk-demo-openai-key"
+    models:
+      - gpt-5
+      - gpt-4o
+      - o4-mini
+    capabilities:
+      - function_calling
+      - vision
+      - audio
+    weight: 1.0
+    priority: 0
+
+  anthropic:
+    endpoint: https://api.anthropic.com
+    api_key: "sk-ant-demo-key"
+    models:
+      - claude-sonnet-4-5
+      - claude-opus-5
+    capabilities:
+      - thinking
+      - prompt_cache
+      - computer_use
+      - citations
+    weight: 1.0
+    priority: 0
+
+  gemini:
+    endpoint: https://generativelanguage.googleapis.com
+    api_key: "AIza-demo-key"
+    models:
+      - gemini-2.5-pro
+      - gemini-2.5-flash
+    capabilities:
+      - grounding
+      - code_execution
+      - live_api
+    weight: 1.0
+    priority: 0
+
+# 客户端 API Key
+client_api_keys:
+  "agra-key-demo-001":
+    org_id: "org_acme"
+    user_id: "user_alice"
+    scopes: ["model:access:*"]
+
+# 限流配置 (对应 AGRA-0004 §7)
+rate_limits:
+  user:
+    capacity: 100
+    refill_rate: 10
+  org:
+    capacity: 1000
+    refill_rate: 100
+  ip:
+    capacity: 200
+    refill_rate: 20
+
+# 路由策略 (对应 AGRA-0004 §6)
+routing:
+  strategy: "capability_aware"  # round_robin / weighted / latency_aware / cost_aware / fallback / capability_aware
+
+# 策略规则 (对应 AGRA-0004 §9)
+policies:
+  - name: "high-cost-model-rate-limit"
+    description: "限制高成本模型的调用频率"
+    match:
+      model: ["gpt-5", "claude-opus-5"]
+    action:
+      rate_limit:
+        requests_per_minute: 10
+
+  - name: "thinking-capability-routing"
+    description: "包含 thinking 参数的请求路由到支持 Thinking 的 Provider"
+    match:
+      body_contains: ["thinking"]
+    action:
+      route:
+        require_capability: "thinking"
+
+  - name: "internal-service-bypass"
+    description: "内部服务跳过认证"
+    match:
+      headers:
+        X-Internal-Service: "true"
+    action:
+      bypass:
+        - auth
+        - rate_limit
+
+# 插件 (对应 AGRA-0001 §2.4)
+plugins:
+  - name: "cache"
+    config:
+      ttl: 300
+  - name: "content_filter"
+    config: {}
+
+# Gateway 配置
+gateway:
+  host: "0.0.0.0"
+  port: 8080
+  default_provider: "openai"
